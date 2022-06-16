@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include <filesystem>
+#include <fstream>
 
 using namespace httpdiot;
 
@@ -46,33 +47,47 @@ bool Server::Start(int argc, char** argv)
 				if (i < argc)
 				{
 					str = argv[i];
-					m_website.m_path = str;
+					
+					WebsiteInfo* wi = new WebsiteInfo;
+					wi->m_path = "..\\www\\";
+					wi->m_path += str;
+					wi->m_path += "\\";
+
+					if (!std::filesystem::exists(wi->m_path.c_str()))
+					{
+						ServLogWrite(ServerLogType::Error, "Bad -w website_name\n");
+					}
+					else
+					{
+						std::string hostsPath = wi->m_path;
+						hostsPath += "hosts.txt";
+
+						if (!std::filesystem::exists(hostsPath.c_str()))
+						{
+							ServLogWrite(ServerLogType::Error, "File %s not exist\n", hostsPath.c_str());
+						}
+						else
+						{
+							std::ifstream in(hostsPath.c_str());
+							for (std::string line; std::getline(in, line); )
+							{
+								ServLogWrite(ServerLogType::Info, "+ host [%s]\n", line.c_str());
+								m_websites[line] = wi;
+							}
+						}
+					}
 				}
 			}
 		}
 	}
 
-	if (m_website.m_path.size())
+	if (!m_websites.size())
 	{
-		if (!std::filesystem::exists(m_website.m_path.c_str()))
-		{
-			ServLogWrite(ServerLogType::Error, "Bad -w website_name\n");
-			return false;
-		}
-	}
-	else
-	{
-		ServLogWrite(ServerLogType::Info, "How to use: httpdiot.exe -w [relative_path_or_absolute_path to www\\websitename]\n");
-		ServLogWrite(ServerLogType::Info, "\thttpdiot.exe -w ..\\www\\test1\n");
-		ServLogWrite(ServerLogType::Info, "\thttpdiot.exe -w C:\\httpdiot\\www\\test2\n");
+		ServLogWrite(ServerLogType::Info, "How to use: httpdiot.exe -w [websitename_in_www_folder]\n");
+		ServLogWrite(ServerLogType::Info, "\thttpdiot.exe -w test1\n");
+		ServLogWrite(ServerLogType::Info, "\thttpdiot.exe -w test1 -w test2\n");
 		ServLogWrite(ServerLogType::Info, "\n");
 		return false;
-	}
-
-	if (m_website.m_path[m_website.m_path.size() - 1] != '/'
-		&& m_website.m_path[m_website.m_path.size() - 1] != '\\')
-	{
-		m_website.m_path.push_back('\\');
 	}
 
 	ServLogWrite(ServerLogType::Info, "`Start()`\n");
@@ -163,6 +178,10 @@ void Server::Run()
 
 int main(int argc, char* argv[])
 {
+//	std::filesystem::path exePath = argv[0];
+//	std::filesystem::path parentPath = exePath.parent_path();
+//	SetCurrentDirectory(L"D:\\Code\\httpdiot\\bin32\\");
+
 	httpdiot::ServLogSetOnWrite(httpdiotLogWriter);
 
 	httpdiot::SocketInitializer soketInitializer;

@@ -271,8 +271,47 @@ void Server::HTTPProcess(SocketObject* sk, const char* buffer, size_t len)
 		printf("Cache-Control: %s\n", req.cache_control.data());
 		printf("DNT: %s\n", req.dnt.data());*/
 
-		snprintf((char*)m_sendBuffer, 0xffff, "HTTP/1.1 200\r\n\r\n<p>404</p>");
-		int rv = sk->Send(m_sendBuffer, 27, 0);
+		if (req.host.size())
+		{
+			//printf("REQUEST! : host [%s]\n", req.host.c_str());
+
+			auto it = m_websites.find(req.host);
+			if (it != m_websites.end())
+			{
+			//	printf("WEBSITE! : path [%s]\n", it->second->m_path.c_str());
+
+				std::string s = it->second->m_path;
+				s += "root\\";
+				s += "index.html";
+
+				FILE* f = 0;
+				fopen_s(&f, s.c_str(), "rb");
+				if (f)
+				{
+					fseek(f, 0, SEEK_END);
+					long fsz = ftell(f);
+					fseek(f, 0, SEEK_SET);
+					
+			//		printf("FILE!\n");
+
+					if (fsz)
+					{
+						if (fsz > 0xffff)
+							fsz = 0xffff;
+						
+			//			printf("SEND!\n");
+
+						fread(m_sendBuffer, fsz, 1, f);
+						int rv = sk->Send(m_sendBuffer, fsz, 0);
+					}
+
+					fclose(f);
+				}
+			}
+		}
+
+//		snprintf((char*)m_sendBuffer, 0xffff, "HTTP/1.1 200\r\n\r\n<p>404</p>");
+//		int rv = sk->Send(m_sendBuffer, 27, 0);
 	}
 
 	//snprintf((char*)http_send_buffer, 0xffff, "%s");

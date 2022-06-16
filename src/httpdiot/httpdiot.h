@@ -12,6 +12,7 @@
 #include <stdio.h>
 
 #include <string>
+#include <map>
 
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
@@ -54,7 +55,8 @@ namespace httpdiot
 		ThreadContext m_threadContext_work;
 		std::thread* m_thread_work = 0;
 
-		WebsiteInfo m_website;
+		//WebsiteInfo m_website;
+		std::map<std::string, WebsiteInfo*> m_websites;
 
 		unsigned char m_receiveBuffer[0xffff];
 		unsigned char m_sendBuffer[0xffff];
