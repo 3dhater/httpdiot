@@ -19,6 +19,7 @@ void httpdiot::thread_accept(ThreadContext* c)
 			ClientInfo ci;
 			ci.m_socket = newClientSocket;
 			server->m_clientList.push_back(ci);
+			Sleep(10);
 		}
 
 		if (c->m_state == ThreadState::NeedToStop)

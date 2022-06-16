@@ -3,6 +3,7 @@
 #include "httpdiot.h"
 
 #include <iostream>
+#include <filesystem>
 
 using namespace httpdiot;
 
@@ -30,8 +31,50 @@ void httpdiotLogWriter(ServerLogType lt, const char* message)
 Server::Server() {}
 Server::~Server() {}
 
-bool Server::Start()
+bool Server::Start(int argc, char** argv)
 {
+	m_isActive = false;
+
+	if (argc > 1)
+	{
+		for (int i = 1; i < argc; ++i)
+		{
+			char* str = argv[i];
+			if (strcmp(str, "-w") == 0)
+			{
+				++i;
+				if (i < argc)
+				{
+					str = argv[i];
+					m_website.m_path = str;
+				}
+			}
+		}
+	}
+
+	if (m_website.m_path.size())
+	{
+		if (!std::filesystem::exists(m_website.m_path.c_str()))
+		{
+			ServLogWrite(ServerLogType::Error, "Bad -w website_name\n");
+			return false;
+		}
+	}
+	else
+	{
+		ServLogWrite(ServerLogType::Info, "How to use: httpdiot.exe -w [relative_path_or_absolute_path to www\\websitename]\n");
+		ServLogWrite(ServerLogType::Info, "\thttpdiot.exe -w ..\\www\\test1\n");
+		ServLogWrite(ServerLogType::Info, "\thttpdiot.exe -w C:\\httpdiot\\www\\test2\n");
+		ServLogWrite(ServerLogType::Info, "\n");
+		return false;
+	}
+
+	if (m_website.m_path[m_website.m_path.size() - 1] != '/'
+		&& m_website.m_path[m_website.m_path.size() - 1] != '\\')
+	{
+		m_website.m_path.push_back('\\');
+	}
+
 	ServLogWrite(ServerLogType::Info, "`Start()`\n");
 
 	if (!m_serverSocket.Create(SocketObject::type_tcp))
@@ -126,13 +169,15 @@ int main(int argc, char* argv[])
 	if (soketInitializer.m_good)
 	{
 		Server server;
-		if (server.Start())
+		if (server.Start(argc, argv))
 		{
 			server.Run();
 			server.Stop();
 
+			Sleep(2000);
 			return EXIT_SUCCESS;
 		}
 	}
+	Sleep(2000);
 	return EXIT_FAILURE;
 }

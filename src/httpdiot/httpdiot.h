@@ -36,7 +36,11 @@ namespace httpdiot
 	struct ClientInfo
 	{
 		SocketObject m_socket;
+	};
 
+	struct WebsiteInfo
+	{
+		std::string m_path;
 	};
 
 	class Server
@@ -49,6 +53,8 @@ namespace httpdiot
 
 		ThreadContext m_threadContext_work;
 		std::thread* m_thread_work = 0;
+
+		WebsiteInfo m_website;
 
 		unsigned char m_receiveBuffer[0xffff];
 		unsigned char m_sendBuffer[0xffff];
@@ -68,7 +74,7 @@ namespace httpdiot
 		Server();
 		~Server();
 
-		bool Start();
+		bool Start(int argc, char** argv);
 		void Run();
 		void Stop();
 
