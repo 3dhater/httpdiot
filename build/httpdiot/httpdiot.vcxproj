@@ -19,12 +19,13 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\src\httpdiot\HTTP.cpp" />
     <ClCompile Include="..\..\src\httpdiot\httpdiot.cpp" />
     <ClCompile Include="..\..\src\httpdiot\httpdiotCrypto.cpp" />
     <ClCompile Include="..\..\src\httpdiot\httpdiotLog.cpp" />
     <ClCompile Include="..\..\src\httpdiot\httpdiotSocketInitializer.cpp" />
     <ClCompile Include="..\..\src\httpdiot\httpdiotSocketObject.cpp" />
-    <ClCompile Include="..\..\src\httpdiot\httpdiotThreadWork.cpp" />
+    <ClCompile Include="..\..\src\httpdiot\httpdiotThread.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

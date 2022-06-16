@@ -30,7 +30,10 @@
     <ClCompile Include="..\..\src\httpdiot\httpdiotCrypto.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\httpdiot\httpdiotThreadWork.cpp">
+    <ClCompile Include="..\..\src\httpdiot\httpdiotThread.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\httpdiot\HTTP.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

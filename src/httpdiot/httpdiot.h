@@ -24,6 +24,8 @@
 #include "httpdiotSocketInitializer.h"
 #include "httpdiotSocketObject.h"
 #include "httpdiotThread.h"
+#include "httpdiotList.h"
+#include "HTTP.h"
 
 #ifdef HTTPDIOT_USE_OPENSSL
 #include "httpdiotCrypto.h"
@@ -31,13 +33,25 @@
 
 namespace httpdiot
 {
+	struct ClientInfo
+	{
+		SocketObject m_socket;
+
+	};
+
 	class Server
 	{
 		bool m_isActive = false;
 		SocketObject m_serverSocket;
 
+		ThreadContext m_threadContext_accept;
+		std::thread* m_thread_accept = 0;
+
 		ThreadContext m_threadContext_work;
 		std::thread* m_thread_work = 0;
+
+		unsigned char m_receiveBuffer[0xffff];
+		unsigned char m_sendBuffer[0xffff];
 
 #ifdef HTTPDIOT_USE_OPENSSL
 		Crypto m_crypto;
@@ -45,7 +59,10 @@ namespace httpdiot
 
 		int m_port = 80;
 
+		httpdiot::List<ClientInfo> m_clientList;
+
 		friend void httpdiot::thread_work(ThreadContext* c);
+		friend void httpdiot::thread_accept(ThreadContext* c);
 
 	public:
 		Server();
@@ -54,6 +71,11 @@ namespace httpdiot
 		bool Start();
 		void Run();
 		void Stop();
+
+		void ServClient(ClientInfo*);
+		
+		bool HTTPGetRequest(const char* buffer, HTTPRequest*);
+		void HTTPProcess(SocketObject* sk, const char* buffer, size_t len);
 	};
 
 }

@@ -1,2 +1,2 @@
 # httpdiot
-Simple web server
+Simple http web server

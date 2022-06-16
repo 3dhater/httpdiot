@@ -8,7 +8,6 @@ SocketObject::SocketObject(){}
 
 SocketObject::~SocketObject()
 {
-    Disconnect();
 }
 
 bool SocketObject::Create(type t)

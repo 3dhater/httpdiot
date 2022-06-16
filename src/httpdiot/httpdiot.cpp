@@ -46,6 +46,10 @@ bool Server::Start()
 		ServLogWrite(ServerLogType::Info, "Listen\n");
 		if (m_serverSocket.Listen())
 		{
+			m_threadContext_accept.m_userData = this;
+			m_threadContext_work.m_userData = this;
+
+			m_thread_accept = new std::thread(httpdiot::thread_accept, &m_threadContext_accept);
 			m_thread_work = new std::thread(httpdiot::thread_work, &m_threadContext_work);
 
 			m_isActive = true;
@@ -71,8 +75,18 @@ void Server::Stop()
 		if (m_thread_work)
 		{
 			m_threadContext_work.m_state = ThreadState::NeedToStop;
-			m_thread_work->detach();
+			if (m_thread_work->joinable())
+				m_thread_work->join();
 			delete m_thread_work;
+		}
+
+		if (m_thread_accept)
+		{
+			m_threadContext_accept.m_state = ThreadState::NeedToStop;
+			m_serverSocket.Disconnect();
+			if (m_thread_accept->joinable())
+				m_thread_accept->join();
+			delete m_thread_accept;
 		}
 
 		m_isActive = false;
