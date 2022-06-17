@@ -87,6 +87,8 @@ namespace httpdiot
 		std::string sec_fetch_dest;
 		std::string sec_fetch_user;
 		std::string range;
+		std::string if_none_match;
+		std::string if_modified_since;
 	};
 
 }

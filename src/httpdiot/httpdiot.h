@@ -26,6 +26,7 @@
 #include "httpdiotSocketObject.h"
 #include "httpdiotThread.h"
 #include "httpdiotList.h"
+#include "httpdiotTimer.h"
 #include "HTTP.h"
 
 #ifdef HTTPDIOT_USE_OPENSSL
@@ -37,6 +38,7 @@ namespace httpdiot
 	struct ClientInfo
 	{
 		SocketObject m_socket;
+		Timer m_connectionTimer;
 	};
 
 	struct WebsiteInfo
@@ -84,6 +86,7 @@ namespace httpdiot
 		
 		bool HTTPGetRequest(const char* buffer, HTTPRequest*);
 		void HTTPProcess(SocketObject* sk, const char* buffer, size_t len);
+		bool ReadTextFile(std::string* path, std::string* str);
 	};
 
 }

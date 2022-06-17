@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include <string>
+#include <filesystem>
 
 using namespace httpdiot;
 
@@ -18,8 +19,8 @@ const char* HTTPGetRequestToken(const char* buffer, std::string* str, bool tolow
 		if (*buffer == '\r' || *buffer == '\n')
 			return buffer;
 
-		if (isgraph(*buffer))
-			str->push_back(tolow ? (char)tolower(*buffer): *buffer);
+		if (isgraph((unsigned char)*buffer))
+			str->push_back(tolow ? (char)tolower((unsigned char)*buffer): *buffer);
 		else
 		{
 			// ' ' or '\t'
@@ -29,7 +30,7 @@ const char* HTTPGetRequestToken(const char* buffer, std::string* str, bool tolow
 
 				if (*buffer == '\r' || *buffer == '\n')
 					return buffer;
-				else if (isgraph(*buffer))
+				else if (isgraph((unsigned char)*buffer))
 					return buffer;
 			}
 		}
@@ -59,7 +60,7 @@ const char* HTTPGetRestLine(const char* buffer, std::string* str)
 	str->clear();
 	while (*buffer)
 	{
-		if (isgraph(*buffer))
+		if (isgraph((unsigned char)*buffer))
 			str->push_back(*buffer);
 		else if(*buffer == ' ')
 			str->push_back(*buffer);
@@ -146,6 +147,14 @@ bool HTTPGetHeaders(const char* buffer, HTTPRequest* req)
 		case 'd':
 			if (strcmp(g_getRequestStringBuffer.c_str(), "dnt:") == 0)
 				buffer = HTTPGetRestLine(buffer, &req->dnt);
+			else
+				printf("UNSUPPORTED HEADER: %s\n", g_getRequestStringBuffer.c_str());
+			break;
+		case 'i':
+			if (strcmp(g_getRequestStringBuffer.c_str(), "if-none-match:") == 0)
+				buffer = HTTPGetRestLine(buffer, &req->if_none_match);
+			else if (strcmp(g_getRequestStringBuffer.c_str(), "if-modified-since:") == 0)
+				buffer = HTTPGetRestLine(buffer, &req->if_modified_since);
 			else
 				printf("UNSUPPORTED HEADER: %s\n", g_getRequestStringBuffer.c_str());
 			break;
@@ -238,6 +247,38 @@ bool Server::HTTPGetRequest(const char* buffer, HTTPRequest* req)
 	return false;
 }
 
+//void Server::RESPONSEIndex(WebsiteInfo* wi)
+//{
+	/*static std::string s;
+	s.clear();
+	s = wi->m_path;
+	s += "root\\index.html";
+	if()*/
+//}
+bool Server::ReadTextFile(std::string* path, std::string* str)
+{
+	str->clear();
+
+	char buf[21];
+	FILE* f = 0;
+	fopen_s(&f, path->c_str(), "rb");
+	if (f)
+	{
+		while (1)
+		{
+			size_t rn = fread(buf, 1, 20, f);
+			if (!rn)
+				break;
+
+			buf[rn] = 0;
+
+			str->append(buf);
+		}
+		fclose(f);
+	}
+	return true;
+}
+
 void Server::HTTPProcess(SocketObject* sk, const char* buffer, size_t len)
 {
 	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_INTENSITY);
@@ -251,9 +292,6 @@ void Server::HTTPProcess(SocketObject* sk, const char* buffer, size_t len)
 			printf("%c", buffer[i]);
 	}
 	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
-
-	//snprintf((char*)http_send_buffer, 0xffff, "HTTP/1.1 200\r\n\r\n<p>404</p>");
-	//int rv = sk->Send(http_send_buffer, 27, 0);
 
 	HTTPRequest req;
 	if (HTTPGetRequest(buffer, &req))
@@ -274,6 +312,11 @@ void Server::HTTPProcess(SocketObject* sk, const char* buffer, size_t len)
 		printf("DNT: %s\n", req.dnt.data());*/
 
 		static std::string sendStr;
+		static std::string headerStr;
+		static std::string fileStr;
+		sendStr.clear();
+		headerStr.clear();
+		fileStr.clear();
 
 		if (req.host.size())
 		{
@@ -282,65 +325,176 @@ void Server::HTTPProcess(SocketObject* sk, const char* buffer, size_t len)
 			auto it = m_websites.find(req.host);
 			if (it != m_websites.end())
 			{
-			//	printf("WEBSITE! : path [%s]\n", it->second->m_path.c_str());
+				printf("WEBSITE! : path [%s]\n", it->second->m_path.c_str());				
+				printf("req path! : [%s]\n", req.path.c_str());
 
-				std::string s = it->second->m_path;
-				s += "root\\";
-				s += "index.html";
+				//std::string s = it->second->m_path;
+				//s += "root\\";
+				static std::string filePath;
+				filePath = it->second->m_path;
+				filePath += "root";
+				//printf("filePath! : [%s]\n", filePath.c_str());
 
-				FILE* f = 0;
-				fopen_s(&f, s.c_str(), "rb");
+				int err = 501;
 
-				if (f)
+				if (strcmp(req.path.c_str(), "/") == 0)
 				{
-					fseek(f, 0, SEEK_END);
-					long fsz = ftell(f);
-					fseek(f, 0, SEEK_SET);
-					
-					if (fsz)
+					filePath += "\\index.html";
+				}
+				else
+				{
+					filePath += req.path;
+				}
+				//printf("filePath! : [%s]\n", filePath.c_str());
+
+				bool isTextFile = true;
+
+				if (std::filesystem::exists(filePath))
+				{
+					std::filesystem::path pth(filePath);
+					auto ext = pth.extension();
+					if (ext == ".html"
+						|| ext == ".xml"
+						|| ext == ".css"
+						|| ext == ".txt"
+						|| ext == ".h"
+						|| ext == ".c"
+						|| ext == ".cpp")
 					{
-						if (fsz > 0xffff)
-							fsz = 0xffff;
-						fread(m_sendBuffer, fsz, 1, f);
-
-						sendStr.clear();
-						sendStr += "HTTP/1.1 200 OK\r\n";
-						sendStr += "Content-Type: text/html\r\n";
-						sendStr += "\r\n";
-						sendStr += (char*)m_sendBuffer;
-						int rv = sk->Send((unsigned char*)sendStr.c_str(), sendStr.size(), 0);
+						err = 0;
+						ReadTextFile(&filePath, &fileStr);
 					}
+					else
+					{
+						err = 0;
+						isTextFile = false;
+						//err = 404;
+					}
+				}
+				else
+				{
+					err = 404;
+				}
 
-					fclose(f);
+				switch (req.version)
+				{
+				case HTTPVersion::HTTP_1_0:
+					headerStr += "HTTP/1.0";
+					break;
+				case HTTPVersion::HTTP_1_1:
+					headerStr += "HTTP/1.1";
+					break;
+				case HTTPVersion::HTTP_2:
+					headerStr += "HTTP/2";
+					break;
+				case HTTPVersion::HTTP_3:
+					headerStr += "HTTP/3";
+					break;
+				}
+
+				switch (err)
+				{
+				case 0:
+				{
+					headerStr += " 200 OK\r\n";
+				}break;
+				case 404:
+				{
+					headerStr += " 404 Not Found\r\n";
+					fileStr.clear();
+					filePath = it->second->m_path;
+					filePath += "root\\errors\\404.html";
+					if (std::filesystem::exists(filePath))
+					{
+						ReadTextFile(&filePath, &fileStr);
+					}
+					else
+					{
+						fileStr = "<html><body><h1>404</h1></body></html>";
+					}
+				}break;
+				case 501:
+				{
+					headerStr += " 501 Not Implemented\r\n";
+					fileStr.clear();
+					filePath = it->second->m_path;
+					filePath += "root\\errors\\501.html";
+					if (std::filesystem::exists(filePath))
+					{
+						ReadTextFile(&filePath, &fileStr);
+					}
+					else
+					{
+						fileStr = "<html><body><h1>501</h1></body></html>";
+					}
+				}break;
+				}
+
+
+				if (err == 0)
+				{
+					if(!isTextFile)
+					{
+						std::filesystem::path pth = filePath;
+						headerStr += "Content-Disposition: attachment; filename=\"";
+						headerStr += pth.filename().generic_string();
+						headerStr += "\"\r\n";
+						headerStr += "Content-Length: ";
+
+						auto fileSz = std::filesystem::file_size(pth);
+						char cb[40];
+						snprintf(cb, 39, "%llu", fileSz);
+
+						headerStr += cb;
+						headerStr += "\r\n";
+					}
+				}
+
+				printf("HEADER: %s\n", headerStr.c_str());
+
+				sendStr = headerStr;
+				sendStr += "\r\n";
+				if (fileStr.size())
+				{
+					sendStr += fileStr;
+					sendStr += "\r\n";
+				}
+
+				int rv = sk->Send((unsigned char*)sendStr.c_str(), sendStr.size(), 0);
+
+				if (err == 0)
+				{
+					if (!isTextFile)
+					{
+						FILE* f = 0;
+						fopen_s(&f, filePath.c_str(), "rb");
+						if (f)
+						{
+							unsigned char charBuf[0xffff];
+							while (1)
+							{
+								size_t readSize = fread_s(charBuf, 0xffff, 1, 0xffff, f);
+								if (readSize)
+								{
+									rv = sk->Send(charBuf, readSize, 0);
+								}
+								else
+								{
+									break;
+								}
+							}
+						}
+						else
+						{
+							//sk->Disconnect();
+						}
+					}
 				}
 			}
 		}
 
-//		snprintf((char*)m_sendBuffer, 0xffff, "HTTP/1.1 200\r\n\r\n<p>404</p>");
-//		int rv = sk->Send(m_sendBuffer, 27, 0);
 	}
 
-	//snprintf((char*)http_send_buffer, 0xffff, "%s");
-
-	/*static std::string str;
-	str.clear();
-	str += "Adr: ";
-	str += sk->m_adrCharBuf;
-	str += "\r\n";
-	str += "Host name: ";
-	str += sk->m_adrHostName;
-	str += "\r\n";
-	for (int i = 0; i < len; ++i)
-	{
-		unsigned char c = (unsigned char)buffer[i];
-		if (isgraph(c))
-			str += buffer[i];
-
-		if (isspace(c))
-			str += buffer[i];
-	}
-	int rv = sk->Send((char*)str.data(), str.size(), 0);*/
-
-	sk->Disconnect();
+	//sk->Disconnect();
 }
 

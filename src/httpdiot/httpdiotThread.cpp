@@ -18,6 +18,7 @@ void httpdiot::thread_accept(ThreadContext* c)
 		{
 			ClientInfo ci;
 			ci.m_socket = newClientSocket;
+			ci.m_connectionTimer.start();
 			server->m_clientList.push_back(ci);
 			Sleep(10);
 		}
@@ -47,7 +48,11 @@ void httpdiot::thread_work(ThreadContext* c)
 
 				server->ServClient(&curr->m_data);
 
-				server->m_clientList.erase_by_node(curr);
+				if (curr->m_data.m_connectionTimer.elapsedSeconds() > 60)
+				{
+					curr->m_data.m_socket.Disconnect();
+					server->m_clientList.erase_by_node(curr);
+				}
 
 				if (curr == last)
 					break;
@@ -83,6 +88,7 @@ void Server::ServClient(ClientInfo* ci)
 	int rv = ci->m_socket.Recv(m_receiveBuffer, 0xffff, 0);
 	if (rv > 0)
 	{
+		ci->m_connectionTimer.start();
 		HTTPProcess(&ci->m_socket, (char*)m_receiveBuffer, rv);
 	}
 }
