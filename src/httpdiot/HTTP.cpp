@@ -126,6 +126,8 @@ bool HTTPGetHeaders(const char* buffer, HTTPRequest* req)
 		case 'r':
 			if (strcmp(g_getRequestStringBuffer.c_str(), "referer:") == 0)
 				buffer = HTTPGetRestLine(buffer, &req->referer);
+			else if (strcmp(g_getRequestStringBuffer.c_str(), "range:") == 0)
+				buffer = HTTPGetRestLine(buffer, &req->range);
 			else
 				printf("UNSUPPORTED HEADER: %s\n", g_getRequestStringBuffer.c_str());
 			break;
@@ -271,6 +273,8 @@ void Server::HTTPProcess(SocketObject* sk, const char* buffer, size_t len)
 		printf("Cache-Control: %s\n", req.cache_control.data());
 		printf("DNT: %s\n", req.dnt.data());*/
 
+		static std::string sendStr;
+
 		if (req.host.size())
 		{
 			//printf("REQUEST! : host [%s]\n", req.host.c_str());
@@ -286,23 +290,25 @@ void Server::HTTPProcess(SocketObject* sk, const char* buffer, size_t len)
 
 				FILE* f = 0;
 				fopen_s(&f, s.c_str(), "rb");
+
 				if (f)
 				{
 					fseek(f, 0, SEEK_END);
 					long fsz = ftell(f);
 					fseek(f, 0, SEEK_SET);
 					
-			//		printf("FILE!\n");
-
 					if (fsz)
 					{
 						if (fsz > 0xffff)
 							fsz = 0xffff;
-						
-			//			printf("SEND!\n");
-
 						fread(m_sendBuffer, fsz, 1, f);
-						int rv = sk->Send(m_sendBuffer, fsz, 0);
+
+						sendStr.clear();
+						sendStr += "HTTP/1.1 200 OK\r\n";
+						sendStr += "Content-Type: text/html\r\n";
+						sendStr += "\r\n";
+						sendStr += (char*)m_sendBuffer;
+						int rv = sk->Send((unsigned char*)sendStr.c_str(), sendStr.size(), 0);
 					}
 
 					fclose(f);

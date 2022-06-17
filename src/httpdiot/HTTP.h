@@ -86,6 +86,7 @@ namespace httpdiot
 		std::string sec_fetch_mode;
 		std::string sec_fetch_dest;
 		std::string sec_fetch_user;
+		std::string range;
 	};
 
 }
