@@ -27,6 +27,7 @@
 #include "httpdiotThread.h"
 #include "httpdiotList.h"
 #include "httpdiotTimer.h"
+#include "httpdiotClient.h"
 #include "HTTP.h"
 
 #ifdef HTTPDIOT_USE_OPENSSL
@@ -35,11 +36,7 @@
 
 namespace httpdiot
 {
-	struct ClientInfo
-	{
-		SocketObject m_socket;
-		Timer m_connectionTimer;
-	};
+	constexpr int GetMaxClients() { return 1000; }
 
 	struct WebsiteInfo
 	{
@@ -54,14 +51,10 @@ namespace httpdiot
 		ThreadContext m_threadContext_accept;
 		std::thread* m_thread_accept = 0;
 
-		ThreadContext m_threadContext_work;
-		std::thread* m_thread_work = 0;
-
-		//WebsiteInfo m_website;
 		std::map<std::string, WebsiteInfo*> m_websites;
 
-		unsigned char m_receiveBuffer[0xffff];
-		unsigned char m_sendBuffer[0xffff];
+		//unsigned char m_receiveBuffer[0xffff];
+		//unsigned char m_sendBuffer[0xffff];
 
 #ifdef HTTPDIOT_USE_OPENSSL
 		Crypto m_crypto;
@@ -69,9 +62,9 @@ namespace httpdiot
 
 		int m_port = 80;
 
-		httpdiot::List<ClientInfo> m_clientList;
-
-		friend void httpdiot::thread_work(ThreadContext* c);
+		httpdiot::List<Client*> m_clientList;
+		
+		friend class Client;
 		friend void httpdiot::thread_accept(ThreadContext* c);
 
 	public:
@@ -82,11 +75,6 @@ namespace httpdiot
 		void Run();
 		void Stop();
 
-		void ServClient(ClientInfo*);
-		
-		bool HTTPGetRequest(const char* buffer, HTTPRequest*);
-		void HTTPProcess(SocketObject* sk, const char* buffer, size_t len);
-		bool ReadTextFile(std::string* path, std::string* str);
 	};
 
 }

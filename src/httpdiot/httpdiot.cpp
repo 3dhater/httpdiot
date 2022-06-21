@@ -5,8 +5,12 @@
 #include <iostream>
 #include <filesystem>
 #include <fstream>
+#include <signal.h>
+#include <mutex>
 
 using namespace httpdiot;
+
+Server* g_server = nullptr;
 
 void httpdiotLogWriter(ServerLogType lt, const char* message)
 {
@@ -29,7 +33,11 @@ void httpdiotLogWriter(ServerLogType lt, const char* message)
 	printf("%s", message);
 }
 
-Server::Server() {}
+Server::Server() 
+{
+	g_server = this;
+}
+
 Server::~Server() {}
 
 bool Server::Start(int argc, char** argv)
@@ -105,10 +113,8 @@ bool Server::Start(int argc, char** argv)
 		if (m_serverSocket.Listen())
 		{
 			m_threadContext_accept.m_userData = this;
-			m_threadContext_work.m_userData = this;
 
 			m_thread_accept = new std::thread(httpdiot::thread_accept, &m_threadContext_accept);
-			m_thread_work = new std::thread(httpdiot::thread_work, &m_threadContext_work);
 
 			m_isActive = true;
 		}
@@ -130,14 +136,6 @@ void Server::Stop()
 	ServLogWrite(ServerLogType::Info, "`Stop()`\n");
 	if (m_isActive)
 	{
-		if (m_thread_work)
-		{
-			m_threadContext_work.m_state = ThreadState::NeedToStop;
-			if (m_thread_work->joinable())
-				m_thread_work->join();
-			delete m_thread_work;
-		}
-
 		if (m_thread_accept)
 		{
 			m_threadContext_accept.m_state = ThreadState::NeedToStop;
@@ -145,6 +143,22 @@ void Server::Stop()
 			if (m_thread_accept->joinable())
 				m_thread_accept->join();
 			delete m_thread_accept;
+		}
+
+		if (m_clientList.m_head)
+		{
+			auto curr = m_clientList.m_head;
+			auto last = m_clientList.m_head->m_left;
+			while (true)
+			{
+				curr->m_data->m_threadContextMain.m_state = ThreadState::NeedToStop;
+				delete curr->m_data;
+
+				if (curr == last)
+					break;
+
+				curr = curr->m_right;
+			}
 		}
 
 		m_isActive = false;
@@ -176,6 +190,13 @@ void Server::Run()
 	}
 }
 
+void int_handler(int sig)
+{
+	ServLogWrite(ServerLogType::Warning, "SIGINT\n");
+	g_server->Stop();
+	exit(EXIT_FAILURE);
+}
+
 int main(int argc, char* argv[])
 {
 //	std::filesystem::path exePath = argv[0];
@@ -183,6 +204,12 @@ int main(int argc, char* argv[])
 //	SetCurrentDirectory(L"D:\\Code\\httpdiot\\bin32\\");
 
 	httpdiot::ServLogSetOnWrite(httpdiotLogWriter);
+
+	signal(SIGINT, int_handler);
+
+	if (std::filesystem::exists("./logs"))
+		std::filesystem::remove_all("./logs");
+	std::filesystem::create_directories("./logs");
 
 	httpdiot::SocketInitializer soketInitializer;
 	if (soketInitializer.m_good)
@@ -200,3 +227,5 @@ int main(int argc, char* argv[])
 	Sleep(2000);
 	return EXIT_FAILURE;
 }
+
+

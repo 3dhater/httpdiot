@@ -1,6 +1,7 @@
 // MIT license
 
 #include "httpdiot.h"
+#include <mutex>
 
 using namespace httpdiot;
 

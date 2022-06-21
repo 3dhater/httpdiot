@@ -10,7 +10,8 @@ namespace httpdiot
 	{
 		Error,
 		Warning,
-		Info
+		Info,
+		text
 	};
 
 	void ServLogWrite(ServerLogType lt, const char* fmt, ...);

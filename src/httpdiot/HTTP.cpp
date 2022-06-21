@@ -9,6 +9,7 @@
 using namespace httpdiot;
 
 std::string g_getRequestStringBuffer;
+extern Server* g_server;
 
 // `GET` `/` `/favicon.ico` `HTTP/1.1` `Host:`
 // Only for current line.
@@ -92,7 +93,7 @@ bool HTTPGetHeaders(const char* buffer, HTTPRequest* req)
 			if (strcmp(g_getRequestStringBuffer.c_str(), "host:") == 0)
 				buffer = HTTPGetRestLine(buffer, &req->host);
 			else
-				printf("UNSUPPORTED HEADER: %s\n", g_getRequestStringBuffer.c_str());
+				ServLogWrite(httpdiot::ServerLogType::text, "UNSUPPORTED HEADER: %s\n", g_getRequestStringBuffer.c_str());
 			break;
 		case 'u':
 			if (strcmp(g_getRequestStringBuffer.c_str(), "user-agent:") == 0)
@@ -100,7 +101,7 @@ bool HTTPGetHeaders(const char* buffer, HTTPRequest* req)
 			else if (strcmp(g_getRequestStringBuffer.c_str(), "upgrade-insecure-requests:") == 0)
 				buffer = HTTPGetRestLine(buffer, &req->upgrade_insecure_requests);
 			else
-				printf("UNSUPPORTED HEADER: %s\n", g_getRequestStringBuffer.c_str());
+				ServLogWrite(httpdiot::ServerLogType::text, "UNSUPPORTED HEADER: %s\n", g_getRequestStringBuffer.c_str());
 			break;
 		case 'a':
 			if (strcmp(g_getRequestStringBuffer.c_str(), "accept:") == 0)
@@ -110,7 +111,7 @@ bool HTTPGetHeaders(const char* buffer, HTTPRequest* req)
 			else if (strcmp(g_getRequestStringBuffer.c_str(), "accept-language:") == 0)
 				buffer = HTTPGetRestLine(buffer, &req->accept_language);
 			else
-				printf("UNSUPPORTED HEADER: %s\n", g_getRequestStringBuffer.c_str());
+				ServLogWrite(httpdiot::ServerLogType::text, "UNSUPPORTED HEADER: %s\n", g_getRequestStringBuffer.c_str());
 			break;
 		case 'c':
 			if (strcmp(g_getRequestStringBuffer.c_str(), "connection:") == 0)
@@ -122,7 +123,7 @@ bool HTTPGetHeaders(const char* buffer, HTTPRequest* req)
 			else if (strcmp(g_getRequestStringBuffer.c_str(), "cache-control:") == 0)
 				buffer = HTTPGetRestLine(buffer, &req->cache_control);
 			else
-				printf("UNSUPPORTED HEADER: %s\n", g_getRequestStringBuffer.c_str());
+				ServLogWrite(httpdiot::ServerLogType::text, "UNSUPPORTED HEADER: %s\n", g_getRequestStringBuffer.c_str());
 			break;
 		case 'r':
 			if (strcmp(g_getRequestStringBuffer.c_str(), "referer:") == 0)
@@ -130,25 +131,25 @@ bool HTTPGetHeaders(const char* buffer, HTTPRequest* req)
 			else if (strcmp(g_getRequestStringBuffer.c_str(), "range:") == 0)
 				buffer = HTTPGetRestLine(buffer, &req->range);
 			else
-				printf("UNSUPPORTED HEADER: %s\n", g_getRequestStringBuffer.c_str());
+				ServLogWrite(httpdiot::ServerLogType::text, "UNSUPPORTED HEADER: %s\n", g_getRequestStringBuffer.c_str());
 			break;
 		case 'o':
 			if (strcmp(g_getRequestStringBuffer.c_str(), "origin:") == 0)
 				buffer = HTTPGetRestLine(buffer, &req->origin);
 			else
-				printf("UNSUPPORTED HEADER: %s\n", g_getRequestStringBuffer.c_str());
+				ServLogWrite(httpdiot::ServerLogType::text, "UNSUPPORTED HEADER: %s\n", g_getRequestStringBuffer.c_str());
 			break;
 		case 'f':
 			if (strcmp(g_getRequestStringBuffer.c_str(), "from:") == 0)
 				buffer = HTTPGetRestLine(buffer, &req->from);
 			else
-				printf("UNSUPPORTED HEADER: %s\n", g_getRequestStringBuffer.c_str());
+				ServLogWrite(httpdiot::ServerLogType::text, "UNSUPPORTED HEADER: %s\n", g_getRequestStringBuffer.c_str());
 			break;
 		case 'd':
 			if (strcmp(g_getRequestStringBuffer.c_str(), "dnt:") == 0)
 				buffer = HTTPGetRestLine(buffer, &req->dnt);
 			else
-				printf("UNSUPPORTED HEADER: %s\n", g_getRequestStringBuffer.c_str());
+				ServLogWrite(httpdiot::ServerLogType::text, "UNSUPPORTED HEADER: %s\n", g_getRequestStringBuffer.c_str());
 			break;
 		case 'i':
 			if (strcmp(g_getRequestStringBuffer.c_str(), "if-none-match:") == 0)
@@ -156,7 +157,7 @@ bool HTTPGetHeaders(const char* buffer, HTTPRequest* req)
 			else if (strcmp(g_getRequestStringBuffer.c_str(), "if-modified-since:") == 0)
 				buffer = HTTPGetRestLine(buffer, &req->if_modified_since);
 			else
-				printf("UNSUPPORTED HEADER: %s\n", g_getRequestStringBuffer.c_str());
+				ServLogWrite(httpdiot::ServerLogType::text, "UNSUPPORTED HEADER: %s\n", g_getRequestStringBuffer.c_str());
 			break;
 		case 's':
 			if (strcmp(g_getRequestStringBuffer.c_str(), "sec-ch-ua:") == 0)
@@ -174,10 +175,10 @@ bool HTTPGetHeaders(const char* buffer, HTTPRequest* req)
 			else if (strcmp(g_getRequestStringBuffer.c_str(), "sec-fetch-user:") == 0)
 				buffer = HTTPGetRestLine(buffer, &req->sec_fetch_user);
 			else
-				printf("UNSUPPORTED HEADER: %s\n", g_getRequestStringBuffer.c_str());
+				ServLogWrite(httpdiot::ServerLogType::text, "UNSUPPORTED HEADER: %s\n", g_getRequestStringBuffer.c_str());
 			break;
 		default:
-			printf("UNSUPPORTED HEADER: %s\n", g_getRequestStringBuffer.c_str());
+			ServLogWrite(httpdiot::ServerLogType::text, "UNSUPPORTED HEADER: %s\n", g_getRequestStringBuffer.c_str());
 			break;
 		}
 
@@ -186,7 +187,7 @@ bool HTTPGetHeaders(const char* buffer, HTTPRequest* req)
 	return true;
 }
 
-bool Server::HTTPGetRequest(const char* buffer, HTTPRequest* req)
+bool Client::HTTPGetRequest(const char* buffer, HTTPRequest* req)
 {
 	g_getRequestStringBuffer.clear();
 	buffer = HTTPGetRequestToken(buffer, &g_getRequestStringBuffer);
@@ -255,7 +256,7 @@ bool Server::HTTPGetRequest(const char* buffer, HTTPRequest* req)
 	s += "root\\index.html";
 	if()*/
 //}
-bool Server::ReadTextFile(std::string* path, std::string* str)
+bool Client::ReadTextFile(std::string* path, std::string* str)
 {
 	str->clear();
 
@@ -279,19 +280,24 @@ bool Server::ReadTextFile(std::string* path, std::string* str)
 	return true;
 }
 
-void Server::HTTPProcess(SocketObject* sk, const char* buffer, size_t len)
+void Client::HTTPProcess(SocketObject* sk, const char* buffer, size_t len)
 {
-	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_INTENSITY);
+	//SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_INTENSITY);
 	for (int i = 0; i < len; ++i)
 	{
 		unsigned char c = (unsigned char)buffer[i];
-		if (isgraph(c))
-			printf("%c", buffer[i]);
+		
+		//char txt[2] = { c, 0 };
+		LogWrite(httpdiot::ServerLogType::text, "%c", c);
+	//	printf("%c", c);
 
-		if (isspace(c))
-			printf("%c", buffer[i]);
+		//if (isgraph(c))
+			//printf("%c", buffer[i]);
+
+		//if (isspace(c))
+			//printf("%c", buffer[i]);
 	}
-	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
+	//SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED);
 
 	HTTPRequest req;
 	if (HTTPGetRequest(buffer, &req))
@@ -322,11 +328,11 @@ void Server::HTTPProcess(SocketObject* sk, const char* buffer, size_t len)
 		{
 			//printf("REQUEST! : host [%s]\n", req.host.c_str());
 
-			auto it = m_websites.find(req.host);
-			if (it != m_websites.end())
+			auto it = g_server->m_websites.find(req.host);
+			if (it != g_server->m_websites.end())
 			{
-				printf("WEBSITE! : path [%s]\n", it->second->m_path.c_str());				
-				printf("req path! : [%s]\n", req.path.c_str());
+				LogWrite(httpdiot::ServerLogType::text, "WEBSITE! : path [%s]\n", it->second->m_path.c_str());
+				LogWrite(httpdiot::ServerLogType::text, "req path! : [%s]\n", req.path.c_str());
 
 				//std::string s = it->second->m_path;
 				//s += "root\\";
@@ -351,6 +357,8 @@ void Server::HTTPProcess(SocketObject* sk, const char* buffer, size_t len)
 
 				if (std::filesystem::exists(filePath))
 				{
+					LogWrite(httpdiot::ServerLogType::text, "exist : [%s]\n", filePath.c_str());
+
 					std::filesystem::path pth(filePath);
 					auto ext = pth.extension();
 					if (ext == ".html"
@@ -359,20 +367,25 @@ void Server::HTTPProcess(SocketObject* sk, const char* buffer, size_t len)
 						|| ext == ".txt"
 						|| ext == ".h"
 						|| ext == ".c"
+						|| ext == ".js"
 						|| ext == ".cpp")
 					{
 						err = 0;
+						LogWrite(httpdiot::ServerLogType::text, "read file: [%s]\n", filePath.c_str());
+
 						ReadTextFile(&filePath, &fileStr);
 					}
 					else
 					{
 						err = 0;
 						isTextFile = false;
+						LogWrite(httpdiot::ServerLogType::text, "as binary: [%s]\n", filePath.c_str());
 						//err = 404;
 					}
 				}
 				else
 				{
+					LogWrite(httpdiot::ServerLogType::text, "not exist : [%s]\n", filePath.c_str());
 					err = 404;
 				}
 
@@ -450,7 +463,7 @@ void Server::HTTPProcess(SocketObject* sk, const char* buffer, size_t len)
 					}
 				}
 
-				printf("HEADER: %s\n", headerStr.c_str());
+				LogWrite( httpdiot::ServerLogType::Info, "HEADER: %s\n", headerStr.c_str());
 
 				sendStr = headerStr;
 				sendStr += "\r\n";
@@ -486,15 +499,18 @@ void Server::HTTPProcess(SocketObject* sk, const char* buffer, size_t len)
 						}
 						else
 						{
-							//sk->Disconnect();
 						}
 					}
 				}
 			}
 		}
 
+		if (req.referer.size())
+		{
+			this->Disconnect();
+		}
 	}
 
-	//sk->Disconnect();
+	//this->Sleep();
 }
 
