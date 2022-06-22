@@ -505,12 +505,12 @@ void Client::HTTPProcess(SocketObject* sk, const char* buffer, size_t len)
 			}
 		}
 
-		if (req.referer.size())
+		//if (req.referer.size())
 		{
-			this->Disconnect();
 		}
 	}
 
 	//this->Sleep();
+	this->Disconnect();
 }
 

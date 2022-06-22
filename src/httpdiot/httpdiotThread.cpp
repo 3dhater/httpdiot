@@ -24,7 +24,6 @@ void httpdiot::thread_accept(ThreadContext* c)
 			else
 			{
 				Client* newClient = new Client;
-				//ci.m_connectionTimer.start();
 				newClient->m_socket = newClientSocket;
 				newClient->m_threadContextMain.m_userData = newClient;
 				newClient->m_thread = new std::thread(thread_client, &newClient->m_threadContextMain);

@@ -7,10 +7,12 @@ using namespace httpdiot;
 Client::Client()
 {
 	m_action = &Client::action_idle;
+	m_connectionTimer.start();
 }
 
 Client::~Client()
 {
+	m_threadContextMain.m_state = ThreadState::NeedToStop;
 	if (m_thread)
 	{
 		if (m_thread->joinable())
@@ -29,7 +31,7 @@ void Client::LogWrite(ServerLogType lt, const char* fmt, ...)
 
 void Client::VaLogWrite(ServerLogType lt, const char* fmt, va_list args)
 {
-	vsnprintf(m_logbuffer, 0x60, fmt, args);
+	/*vsnprintf(m_logbuffer, 0x60, fmt, args);
 	char lognamebuf[30];
 	snprintf(lognamebuf, 30, "logs/%i.txt", m_threadID);
 	FILE* f = fopen(lognamebuf, "a");
@@ -37,7 +39,7 @@ void Client::VaLogWrite(ServerLogType lt, const char* fmt, va_list args)
 	{
 		fwrite(m_logbuffer, 1, strlen(m_logbuffer), f);
 		fclose(f);
-	}
+	}*/
 }
 
 void Client::Disconnect()
@@ -71,6 +73,13 @@ void Client::action_sleep()
 
 void Client::action_idle()
 {
+	if (m_connectionTimer.elapsedSeconds() > 10.0)
+	{
+		//LogWrite(httpdiot::ServerLogType::text, "DISCONNECT\n");
+		Disconnect();
+		return;
+	}
+
 	int rv = m_socket.Recv(m_receiveBuffer, 0xfff, 0);
 	if (rv > 0)
 	{
